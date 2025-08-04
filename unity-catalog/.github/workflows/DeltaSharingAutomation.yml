@@ -1,0 +1,122 @@
+# .github/workflows/delta_sharing.yml
+name: Delta Sharing Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      # — Share-parameters —
+      share_key:
+        description: 'Resource-naam, zonder spaties (vb: onboarding_share)'
+        required: true
+      object_name:
+        description: 'Schema en tabel (vb: sandbox.schema.my_table)'
+        required: true
+      object_type:
+        description: 'TABLE of SCHEMA'
+        required: true
+      history_status:
+        description: 'ENABLED of DISABLED'
+        required: false
+        default: 'ENABLED'
+      partition_name:
+        description: 'Partition-veldnaam (leeg laten als geen partition)'
+        required: false
+      partition_op:
+        description: 'Partition-operator (EQUAL, leeg als geen partition)'
+        required: false
+      partition_key:
+        description: 'Recipient-property-key (leeg als geen partition)'
+        required: false
+      recipients:
+        description: 'Comma-gescheiden lijst met grant-principals (vb: recipient-data01,mdlz)'
+        required: true
+
+      # — Recipient-parameters —
+      recipient_key:
+        description: 'Resource-naam voor recipient (vb: recipient-data01)'
+        required: true
+      recipient_name:
+        description: 'Weergavenaam voor de recipient'
+        required: true
+      recipient_comment:
+        description: 'Comment bij de recipient'
+        required: true
+      authentication_type:
+        description: 'TOKEN of DATABRICKS'
+        required: true
+      data_recipient_global_metastore_id:
+        description: 'Global metastore ID (leeg als niet nodig)'
+        required: false
+      contact_email:
+        description: 'contact_email property'
+        required: true
+      advertiser_id_gam:
+        description: 'advertiser_id_gam property (optioneel)'
+        required: false
+      advertiser_id_streaem:
+        description: 'advertiser_id_streaem property (optioneel)'
+        required: false
+      retailer_id_streaem:
+        description: 'retailer_id_streaem property (optioneel)'
+        required: false
+      customerId:
+        description: 'customerId property (optioneel)'
+        required: false
+
+jobs:
+  append-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Jinja2-CLI
+        run: pip3 install jinja2-cli
+
+      - name: Render & append share-blok
+        shell: bash
+        run: |
+          # Zet comma-list om naar JSON-array
+          recs="${{ github.event.inputs.recipients }}"
+          recs_json=$(awk -v RS=',' 'BEGIN{printf "["} {gsub(/^[ \t]+|[ \t]+$/,""); printf "%s\"%s\"", sep, $0; sep=","} END{print "]"}' <<< "$recs")
+
+          # Render template
+          jinja2 templates/shares.tf.j2 \
+            -D share_key="${{ github.event.inputs.share_key }}" \
+            -D object_name="${{ github.event.inputs.object_name }}" \
+            -D object_type="${{ github.event.inputs.object_type }}" \
+            -D history_status="${{ github.event.inputs.history_status }}" \
+            -D partition_name="${{ github.event.inputs.partition_name }}" \
+            -D partition_op="${{ github.event.inputs.partition_op }}" \
+            -D partition_key="${{ github.event.inputs.partition_key }}" \
+            -D recipients="$recs_json" \
+            > new_share.tf
+
+          # Append aan je hoofd-bestand
+          cat new_share.tf >> unity-catalog/shares.tf
+          rm new_share.tf
+
+      - name: Render & append recipient-blok
+        shell: bash
+        run: |
+          jinja2 templates/recipients.tf.j2 \
+            -D recipient_key="${{ github.event.inputs.recipient_key }}" \
+            -D recipient_name="${{ github.event.inputs.recipient_name }}" \
+            -D recipient_comment="${{ github.event.inputs.recipient_comment }}" \
+            -D authentication_type="${{ github.event.inputs.authentication_type }}" \
+            -D data_recipient_global_metastore_id="${{ github.event.inputs.data_recipient_global_metastore_id }}" \
+            -D contact_email="${{ github.event.inputs.contact_email }}" \
+            -D advertiser_id_gam="${{ github.event.inputs.advertiser_id_gam }}" \
+            -D advertiser_id_streaem="${{ github.event.inputs.advertiser_id_streaem }}" \
+            -D retailer_id_streaem="${{ github.event.inputs.retailer_id_streaem }}" \
+            -D customerId="${{ github.event.inputs.customerId }}" \
+            > new_recipient.tf
+
+          cat new_recipient.tf >> unity-catalog/recipients.tf
+          rm new_recipient.tf
+
+      - name: Commit & open Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: delta/${{ github.event.inputs.share_key }}_${{ github.event.inputs.recipient_key }}
+          commit-message: 'feat: voeg share ${{ github.event.inputs.share_key }} + recipient ${{ github.event.inputs.recipient_key }} toe'
+          title: 'Delta Sharing: add ${{ github.event.inputs.share_key }} & ${{ github.event.inputs.recipient_key }}'

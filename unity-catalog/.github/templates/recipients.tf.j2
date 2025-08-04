@@ -1,0 +1,27 @@
+{% raw %}
+{# recipients.tf.j2 #}
+
+# Eenvoudige template voor één recipient
+# Vul alle velden hieronder in via de Action-inputs
+
+### Recipient {{ recipient_key }} ###
+resource "databricks_recipient" "{{ recipient_key }}" {
+  name                = "{{ recipient_name }}"
+  comment             = "{{ recipient_comment }}"
+  authentication_type = "{{ authentication_type }}"
+  {%- if data_recipient_global_metastore_id %}
+  data_recipient_global_metastore_id = "{{ data_recipient_global_metastore_id }}"
+  {%- endif %}
+  properties_kvpairs {
+    properties = {
+      # Verplicht
+      "contact_email"         = "{{ contact_email }}"
+      # Optioneel, comment/uncomment zoals nodig
+      {% if advertiser_id_gam %}"advertiser_id_gam"     = "{{ advertiser_id_gam }}"{% endif %}
+      {% if advertiser_id_streaem %}"advertiser_id_streaem" = "{{ advertiser_id_streaem }}"{% endif %}
+      {% if retailer_id_streaem %}"retailer_id_streaem"   = "{{ retailer_id_streaem }}"{% endif %}
+      {% if customerId %}"customerId"            = "{{ customerId }}"{% endif %}
+    }
+  }
+}
+{% endraw %}
