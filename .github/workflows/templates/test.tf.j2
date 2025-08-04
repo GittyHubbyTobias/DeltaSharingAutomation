@@ -1,0 +1,15 @@
+{% raw %}
+{# shares.tf.j2 #}
+
+### Share {{ share_key }} ###
+resource "databricks_share" "{{ share_key }}" {
+  name = "{{ share_key }}"
+  object {
+    name                        = "{{ object_name }}"
+    data_object_type            = "{{ object_type }}"
+    history_data_sharing_status = "{{ history_status|default('ENABLED') }}"
+
+
+
+
+    

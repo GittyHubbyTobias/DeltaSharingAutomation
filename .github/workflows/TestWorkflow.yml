@@ -1,0 +1,49 @@
+name: Test Render Template
+
+on:
+  workflow_dispatch:
+    inputs:
+      share_key:
+        description: 'Name of the share resource (e.g., onboarding_share)'
+        required: true
+      object_name:
+        description: 'Schema and table name (e.g., sandbox.schema.table)'
+        required: true
+      object_type:
+        description: 'Type of object: TABLE or SCHEMA'
+        required: true
+      recipients:
+        description: 'Comma-separated list of recipient identifiers'
+        required: true
+
+jobs:
+  test-render:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository to the runner
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Install the Jinja2 CLI tool for template rendering
+      - name: Install Jinja2-CLI
+        run: pip3 install jinja2-cli
+
+      # Render the template and output to test.tf
+      - name: Render template to test.tf
+        shell: bash
+        run: |
+          # Convert comma-separated string to JSON array for Jinja
+          recs_input="${{ github.event.inputs.recipients }}"
+          recs_json=$(awk -v RS=',' 'BEGIN{printf "["} {gsub(/^[ \t]+|[ \t]+$/,""); printf "%s\"%s\"",sep,$0; sep=","} END{print "]"}' <<< "$recs_input")
+
+          # Render the Jinja2 template using the provided inputs
+          jinja2 .github/workflows/templates/test.tf.j2 \
+            -D share_key="${{ github.event.inputs.share_key }}" \
+            -D object_name="${{ github.event.inputs.object_name }}" \
+            -D object_type="${{ github.event.inputs.object_type }}" \
+            -D recipients="$recs_json" \
+            > test.tf
+
+      # Display the generated test.tf for verification
+      - name: Display generated file
+        run: cat test.tf
