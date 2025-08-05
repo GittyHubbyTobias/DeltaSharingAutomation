@@ -1,7 +1,7 @@
 # .github/workflows/TestWorkflow.yml
 name: Render and Append Test Template
 
-# 1) Grant write permissions to the workflow so it can push changes
+# 1) Grant write permissions so the job can push changes
 permissions:
   contents: write
 
@@ -19,7 +19,7 @@ jobs:
   render-and-append:
     runs-on: ubuntu-latest
     steps:
-      # 2) Checkout the repository with the built-in GITHUB_TOKEN
+      # 2) Checkout with push rights
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -27,30 +27,25 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      # 3) Install Jinja2 CLI for template rendering
+      # 3) Install Jinja2 CLI
       - name: Install Jinja2 CLI
         run: |
           python3 -m pip install --upgrade pip
           pip3 install jinja2-cli
 
-      # 4) Render the template and append the result to test.tf
-      - name: Render and append test.tf.j2
+      # 4) Render the template and append to your target file
+      - name: Render and append Test_file_to_be_filled.tf
         run: |
-          jinja2 .github/workflows/templates/test.tf.j2 \
+          jinja2 .github/workflows/templates/Test_template.tf.j2 \
             -D resource_name="${{ github.event.inputs.resource_name }}" \
             -D resource_attribute_name="${{ github.event.inputs.resource_attribute_name }}" \
-            >> test.tf
+            >> Test_file_to_be_filled.tf
 
-      # 5) Commit & push the updated test.tf back to the repo
+      # 5) Commit & push back to repo
       - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add test.tf
-          # Only commit if there are staged changes
-          git diff --cached --quiet || git commit -m "ci: auto-append test.tf (${{ github.event.inputs.resource_name }})"
+          git add Test_file_to_be_filled.tf
+          git diff --cached --quiet || git commit -m "ci: auto-append Test_file_to_be_filled.tf (${{ github.event.inputs.resource_name }})"
           git push
-
-      # 6) (Optional) Show the first 20 lines for quick verification
-      - name: Show beginning of test.tf
-        run: head -n 20 test.tf
