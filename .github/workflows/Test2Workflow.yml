@@ -1,5 +1,5 @@
 # .github/workflows/TestWorkflow.yml
-name: Render and Append Multiple Templates
+name: Test2 Render and Append Multiple Templates
 
 # 1) Ensure the job has write permissions to push changes
 permissions:
