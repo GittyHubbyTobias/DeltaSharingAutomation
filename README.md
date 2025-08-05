@@ -25,3 +25,47 @@ Embedding the templates directly in the workflow might work, but having separate
 - **Handling Grants**  
   In the Terraform template, are the Grants populated automatically (by Terraform or another process), or does the user need to supply them? (I assume users won’t provide grant details themselves.)
 
+
+
+- **For test3** 
+It’s also possible to feed in JSON data!
+This comes in handy for the shares.tf and recipients.tf files, since they require so much input.
+And perhaps this approach could help automate the process even further.
+
+
+{
+  "recipients": [
+    {
+      "key": "groupm_test",
+      "name": "groupm_test",
+      "comment": "Data share for Test",
+      "authentication_type": "TOKEN",
+      "properties": {
+        "contact_email": "jimy@company.com",
+        "advertiser_id_gam": "123456"
+      }
+    }
+  ],
+  "shares": [
+    {
+      "key": "test",
+      "name": "test",
+      "objects": [
+        {
+          "name": "test.test.test",
+          "data_object_type": "TABLE",
+          "history_data_sharing_status": "ENABLED"
+        }
+      ],
+      "grants": [
+        {
+          "principal": "test",
+          "privileges": ["SELECT"]
+        }
+      ]
+    }
+  ]
+}
+
+
+
