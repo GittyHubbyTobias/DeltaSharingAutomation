@@ -1,0 +1,66 @@
+# .github/workflows/TestWorkflow.yml
+name: Render and Append Multiple Templates
+
+# 1) Ensure the job has write permissions to push changes
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource_name:
+        description: 'Internal Terraform resource name (e.g. my_share)'
+        required: true
+      resource_attribute_name:
+        description: 'Value for the resource \"name\" attribute (e.g. my_share)'
+        required: true
+      car_name:
+        description: 'Name of the car (e.g. Camaro)'
+        required: true
+      colour_name:
+        description: 'Colour of the car (e.g. red)'
+        required: true
+
+jobs:
+  render-and-append:
+    runs-on: ubuntu-latest
+    steps:
+      # 2) Checkout repository with push rights
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+          fetch-depth: 0
+
+      # 3) Install Jinja2 CLI
+      - name: Install Jinja2 CLI
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install jinja2-cli
+
+      # 4a) Render first template and append to Test2_file_to_be_filled.tf
+      - name: Render & append Test_template.tf.j2
+        run: |
+          jinja2 .github/workflows/templates/Test_template.tf.j2 \
+            -D resource_name="${{ github.event.inputs.resource_name }}" \
+            -D resource_attribute_name="${{ github.event.inputs.resource_attribute_name }}" \
+            >> Test2_file_to_be_filled.tf
+
+      # 4b) Render second template and append to Test2_file_to_be_filled.tf
+      - name: Render & append Test2_template.tf.j2
+        run: |
+          jinja2 .github/workflows/templates/Test2_template.tf.j2 \
+            -D car_name="${{ github.event.inputs.car_name }}" \
+            -D colour_name="${{ github.event.inputs.colour_name }}" \
+            >> Test2_file_to_be_filled.tf
+
+      # 5) Commit and push changes back to the repository
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Test2_file_to_be_filled.tf
+          git diff --cached --quiet || \
+            git commit -m "ci: auto-append Terraform blocks (${{ github.event.inputs.resource_name }}, ${{ github.event.inputs.car_name }})"
+          git push
