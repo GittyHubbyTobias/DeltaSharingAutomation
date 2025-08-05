@@ -1,0 +1,35 @@
+{# .github/workflows/templates/Test3_shares.tf.j2 #}
+{% for s in shares %}
+resource "databricks_share" "{{ s.key }}" {
+  name = "{{ s.name }}"
+  {% for obj in s.objects %}
+  object {
+    name                        = "{{ obj.name }}"
+    data_object_type            = "{{ obj.data_object_type }}"
+    history_data_sharing_status = "{{ obj.history_data_sharing_status }}"
+    {% if obj.partition is defined %}
+    partition {
+      value {
+        name                   = "{{ obj.partition.name }}"
+        op                     = "{{ obj.partition.op }}"
+        recipient_property_key = "{{ obj.partition.recipient_property_key }}"
+      }
+    }
+    {% endif %}
+  }
+  {% endfor %}
+}
+
+resource "databricks_grants" "{{ s.key }}_grant" {
+  share = databricks_share.{{ s.key }}.name
+  {% for g in s.grants %}
+  grant {
+    principal  = databricks_recipient.{{ g.principal }}.name
+    privileges = [
+      {% for p in g.privileges %}"{{ p }}"{% if not loop.last %}, {% endif %}{% endfor %}
+    ]
+  }
+  {% endfor %}
+}
+
+{% endfor %}

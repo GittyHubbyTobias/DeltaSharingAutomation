@@ -1,0 +1,20 @@
+{# .github/workflows/templates/Test3_recipients.tf.j2 #}
+{% for r in recipients %}
+resource "databricks_recipient" "{{ r.key }}" {
+  name                = "{{ r.name }}"
+  comment             = "{{ r.comment }}"
+  authentication_type = "{{ r.authentication_type }}"
+  {% if r.data_recipient_global_metastore_id is defined %}
+  data_recipient_global_metastore_id = "{{ r.data_recipient_global_metastore_id }}"
+  {% endif %}
+
+  properties_kvpairs {
+    properties = {
+    {% for k, v in r.properties.items() %}
+      "{{ k }}" = "{{ v }}"
+    {% endfor %}
+    }
+  }
+}
+
+{% endfor %}
