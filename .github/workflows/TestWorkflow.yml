@@ -1,34 +1,53 @@
 # .github/workflows/TestWorkflow.yml
-name: Render en Append Test Template
+name: Render and Append Test Template
 
 on:
   workflow_dispatch:
     inputs:
       resource_name:
-        description: 'De interne Terraform-resource-naam (bv. my_share)'
+        description: 'Internal Terraform resource name (e.g. my_share)'
         required: true
       resource_attribute_name:
-        description: 'De waarde voor het attribuut “name” in de resource (bv. my_share)'
+        description: 'Value for the resource "name" attribute (e.g. my_share)'
         required: true
 
 jobs:
   render-and-append:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      # 1. Checkout the repo with write permissions so we can push later
+      - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          persist-credentials: true  # allow git push with the built-in GITHUB_TOKEN
+          fetch-depth: 0            # fetch full history for proper commit
 
-      - name: Installeer Jinja2 CLI
+      # 2. Install Jinja2 CLI for template rendering
+      - name: Install Jinja2 CLI
         run: |
           python3 -m pip install --upgrade pip
           pip3 install jinja2-cli
 
-      - name: Render test.tf.j2 en append naar test.tf
+      # 3. Render the template and append the result to test.tf
+      - name: Render and append test.tf.j2
         run: |
           jinja2 .github/workflows/templates/test.tf.j2 \
             -D resource_name="${{ github.event.inputs.resource_name }}" \
             -D resource_attribute_name="${{ github.event.inputs.resource_attribute_name }}" \
             >> test.tf
 
-      - name: Toon begin van test.tf voor debug
+      # 4. Commit & push the updated test.tf back to the repo
+      - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add test.tf
+          # Only commit if there are changes staged
+          git diff --cached --quiet || git commit -m "ci: auto-append test.tf (${{ github.event.inputs.resource_name }})"
+          git push
+
+      # 5. (Optional) Show the first 20 lines for quick verification
+      - name: Show beginning of test.tf
         run: head -n 20 test.tf
