@@ -8,6 +8,20 @@ According to the setup in this repo, you should create one template per target f
 Embedding the templates directly in the workflow might work, but having separate `.tf.j2` templates offers (in my view) better clarity and flexibility.
 
 
+
+## File Overview
+There are three tests in total, and each test uses three types of files:
+
+1.  .github/workflows/
+  Contains the GitHub Actions workflows that are triggered by the Actions runner.
+
+2.  .github/workflows/templates/
+  Contains the Jinja2 templates. Each workflow presents a form for the user to enter the required data, merges that input with the template.
+
+3.  Root-level Terraform files
+  …and appends the generated snippet to the appropriate .tf file in the repository root.
+
+
 ## Further investigation
 
 - **Streamline user input**  
