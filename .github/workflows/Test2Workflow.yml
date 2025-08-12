@@ -12,13 +12,13 @@ on:
         description: 'Internal Terraform resource name (e.g. my_share)'
         required: true
       resource_attribute_name:
-        description: 'Value for the resource \"name\" attribute (e.g. my_share)'
+        description: 'Value for the resource (e.g. my_share)'
         required: true
       car_name:
-        description: 'Name of the car (e.g. Camaro)'
+        description: 'Description'
         required: true
       colour_name:
-        description: 'Colour of the car (e.g. red)'
+        description: 'Description'
         required: true
 
 jobs:
